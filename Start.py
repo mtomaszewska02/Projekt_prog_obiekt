@@ -72,6 +72,3 @@ while running:
 pygame.quit()
 
 
-#cos dopisuje
-#gsfdagdfgvdbzgbvzbz
-#d[dfgkdfpgkfog
