@@ -72,4 +72,3 @@ while running:
 pygame.quit()
 
 
-#cos dopisuje
