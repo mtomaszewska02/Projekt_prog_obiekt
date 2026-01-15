@@ -70,3 +70,6 @@ while running:
 
 # Zakończenie działania Pygame
 pygame.quit()
+
+
+#cos dopisuje
