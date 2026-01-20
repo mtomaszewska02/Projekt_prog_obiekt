@@ -47,4 +47,4 @@ def create_texture(width, height, color, char_sign=""):
     surf.fill(color)
     pygame.draw.rect(surf, (255,255,255), (width-10, 5, 5, 5)) # Oczy
     return surf
-#doaivsdv
+#oisdfhsdhfishdf
