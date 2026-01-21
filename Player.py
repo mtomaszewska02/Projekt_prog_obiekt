@@ -6,7 +6,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, game):
         super().__init__()
         self.game = game
-
+        self.run_timer = 0
         # Ładowanie wyglądu z Settings.py
         w, h = PLAYER_SKIN["width"], PLAYER_SKIN["height"]
 
@@ -76,16 +76,29 @@ class Player(pygame.sprite.Sprite):
         self.acc = pygame.math.Vector2(0, GRAVITY)
         keys = pygame.key.get_pressed()
 
-        speed = ACCELERATION + self.max_speed_boost
+        moving = keys[pygame.K_LEFT] or keys[pygame.K_a] or keys[pygame.K_RIGHT] or keys[pygame.K_d]
 
+        if moving:
+            self.run_timer += 1
+        else:
+            self.run_timer = 0
+
+        current_acc = ACCELERATION + self.max_speed_boost
+        if self.run_timer > 5:
+            current_acc *= SPRINT_MULTIPLIER
+            ###############
+        sprint_progress = min(self.run_timer / SPRINT_RAMP_TIME, 1.0)
+        current_multiplier = 1.0 + (sprint_progress * (SPRINT_MULTIPLIER - 1.0))
+        current_acc = (ACCELERATION + self.max_speed_boost) * current_multiplier
+        #######################
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.acc.x = -speed
+            self.acc.x = -current_acc
             self.facing_right = False
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.acc.x = speed
+            self.acc.x = current_acc
             self.facing_right = True
 
-        # Fizyka ruchu + Tarcie
+        # Fizyka ruchu + Tarcie (reszta kodu pozostaje bez zmian)
         self.acc.x += self.vel.x * FRICTION
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc

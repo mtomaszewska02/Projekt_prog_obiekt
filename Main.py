@@ -14,14 +14,22 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.font = pygame.font.SysFont("Arial", 20)
+        self.font = pygame.font.SysFont("Arial", 20)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         try:
             self.background = pygame.image.load(BG_IMAGE_PATH).convert()
         except:
             print("Brak tła, używam koloru.")
             self.background = None  # Fallback
-
+        self.load_data()
         self.new_game()
+
+    def load_data(self):
+        try:
+            with open(HS_FILE, 'r') as f:
+                self.highscore = int(f.read())
+        except:
+            self.highscore = 0
     def new_game(self):
         # Grupy spritów
         self.all_sprites = pygame.sprite.Group()
@@ -113,12 +121,16 @@ class Game:
             self.all_sprites.add(p)
 
         # 5. ŚMIERĆ (DOTKNIĘCIE LAWY LUB SPADNIĘCIE)
-        if pygame.sprite.spritecollide(self.player, self.danger_zone, False):
-            print("Śmierć w lawie!")
-            self.new_game()
+        death_by_lava = pygame.sprite.spritecollide(self.player, self.danger_zone, False)
+        fell_off = self.player.rect.top > SCREEN_HEIGHT + 200
 
-        if self.player.rect.top > SCREEN_HEIGHT + 200:
-            print("Spadłeś!")
+        if death_by_lava or fell_off:
+            if self.score > self.highscore:
+                self.highscore = self.score
+                with open(HS_FILE, 'w') as f:
+                    f.write(str(self.highscore))
+
+            print(f"Koniec gry! Twój wynik: {self.score}, Rekord: {self.highscore}")
             self.new_game()
 
     def draw(self):
@@ -130,9 +142,13 @@ class Game:
 
         self.all_sprites.draw(self.screen)
 
-        # Rysowanie wyniku
+        # Rysowanie wyniku bieżącego
         score_surf = self.font.render(f"Wysokość: {self.score}", True, BLACK)
         self.screen.blit(score_surf, (10, 10))
+
+        # Rysowanie REKORDU
+        hs_surf = self.font.render(f"Rekord: {self.highscore}", True, RED)
+        self.screen.blit(hs_surf, (10, 35))
 
         pygame.display.flip()
 

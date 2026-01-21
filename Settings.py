@@ -10,8 +10,13 @@ TITLE = "Infinite Jumper - Python"
 GRAVITY = 0.8
 FRICTION = -0.12
 ACCELERATION = 0.5
+SPRINT_MULTIPLIER = 2.0
+SPRINT_RAMP_TIME = 20
 JUMP_POWER = -16
 LAVA_SPEED = 1.5  # Prędkość podnoszenia się podłoża
+
+# --- SYSTEM WYNIKÓW ---
+HS_FILE = "highscore.txt"
 
 # --- GENEROWANIE POZIOMU ---
 PLATFORM_GAP_Y = (20, 70)  # Min i max odległość pionowa między platformami
