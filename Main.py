@@ -15,6 +15,8 @@ class Game:
         self.running = True
         self.font = pygame.font.SysFont("Arial", 20)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.highscore = 0
+
         try:
             bg_img = pygame.image.load(BG_IMAGE_PATH).convert()
             # Skaluj tło do rozmiaru ekranu
@@ -22,8 +24,15 @@ class Game:
         except:
             print("Brak tła, używam koloru.")
             self.background = None  # Fallback
-
+        self.load_data()
         self.new_game()
+
+    def load_data(self):
+        try:
+            with open(HS_FILE, 'r') as f:
+                self.highscore = int(f.read())
+        except:
+            self.highscore = 0
     def new_game(self):
         # Grupy spritów
         self.all_sprites = pygame.sprite.Group()
@@ -121,12 +130,15 @@ class Game:
             self.all_sprites.add(p)
 
         # 5. ŚMIERĆ (DOTKNIĘCIE LAWY LUB SPADNIĘCIE)
-        if pygame.sprite.spritecollide(self.player, self.danger_zone, False):
-            print("Śmierć w lawie!")
-            self.new_game()
+        death_by_lava = pygame.sprite.spritecollide(self.player, self.danger_zone, False)
+        fell_off = self.player.rect.top > SCREEN_HEIGHT + 200
 
-        if self.player.rect.top > SCREEN_HEIGHT + 200:
-            print("Spadłeś!")
+        if death_by_lava or fell_off:
+            if self.score > self.highscore:
+                self.highscore = self.score
+                with open(HS_FILE, 'w') as f:
+                    f.write(str(self.highscore))
+            print(f"Koniec gry! Twój wynik: {self.score}, Rekord: {self.highscore}")
             self.new_game()
 
     def draw(self):
@@ -138,10 +150,14 @@ class Game:
 
         self.all_sprites.draw(self.screen)
 
-        # Rysowanie wyniku
+        # Rysowanie wyniku bieżącego
         score_surf = self.font.render(f"Wysokość: {self.score}", True, BLACK)
         self.screen.blit(score_surf, (10, 10))
-        
+
+        # Rysowanie REKORDU
+        hs_surf = self.font.render(f"Rekord: {self.highscore}", True, RED)
+        self.screen.blit(hs_surf, (10, 35))
+
         # COMBO COUNTER - Icy Tower style
         if self.player.jump_count > 1:
             combo_font = pygame.font.SysFont("Arial", 36, bold=True)
@@ -149,26 +165,6 @@ class Game:
             combo_surf = combo_font.render(combo_text, True, RED)
             combo_x = SCREEN_WIDTH // 2 - combo_surf.get_width() // 2
             self.screen.blit(combo_surf, (combo_x, 100))
-        
-        # Debug info - zawsze pokazuj combo count
-        combo_debug = self.font.render(f"Combo: {self.player.jump_count}", True, BLUE)
-        self.screen.blit(combo_debug, (10, SCREEN_HEIGHT - 90))
-        
-        # Debug info - pokazuje prędkość poziomą
-        speed_percent = (abs(self.player.vel.x) / MAX_HORIZONTAL_SPEED) * 100
-        speed_surf = self.font.render(f"Prędkość: {speed_percent:.0f}%", True, BLACK)
-        self.screen.blit(speed_surf, (10, 35))
-        
-        # Pokazuje bonus do skoku
-        jump_bonus = int((abs(self.player.vel.x) / MAX_HORIZONTAL_SPEED) * JUMP_SPEED_BONUS * 100)
-        bonus_surf = self.font.render(f"Bonus: +{jump_bonus}%", True, GREEN if jump_bonus > 0 else BLACK)
-        self.screen.blit(bonus_surf, (10, 60))
-        
-        # Debug - pokazuje czas od ostatniego skoku
-        time_since = (pygame.time.get_ticks() - self.player.last_jump_time) / 1000
-        time_surf = self.font.render(f"Time: {time_since:.1f}s", True, BLACK)
-        self.screen.blit(time_surf, (10, SCREEN_HEIGHT - 60))
-        self.screen.blit(bonus_surf, (10, 60))
 
         pygame.display.flip()
 
