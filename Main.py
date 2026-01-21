@@ -14,10 +14,13 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.font = pygame.font.SysFont("Arial", 20)
-        self.font = pygame.font.SysFont("Arial", 20)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.highscore = 0
+
         try:
-            self.background = pygame.image.load(BG_IMAGE_PATH).convert()
+            bg_img = pygame.image.load(BG_IMAGE_PATH).convert()
+            # Skaluj tło do rozmiaru ekranu
+            self.background = pygame.transform.scale(bg_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
         except:
             print("Brak tła, używam koloru.")
             self.background = None  # Fallback
@@ -54,13 +57,14 @@ class Game:
 
     def check_ground(self):
         # Sprawdza czy gracz stoi na ziemi
-        if self.player.vel.y > 0:
+        if self.player.vel.y >= 0:  # ZMIENIONE: >= zamiast > (obejmuje też vel.y = 0)
             hits = pygame.sprite.spritecollide(self.player, self.platforms, False)
             if hits:
                 lowest = hits[0]
                 if self.player.pos.y < lowest.rect.bottom:
                     self.player.pos.y = lowest.rect.top + 1
                     self.player.vel.y = 0
+                    self.player.last_ground_time = pygame.time.get_ticks()
                     return True
         return False
 
@@ -78,6 +82,10 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE or event.key == pygame.K_w or event.key == pygame.K_UP:
                     self.player.jump()
+            if event.type == pygame.KEYUP:
+                # Zmniejsz wysokość skoku gdy gracz puści przycisk (lepsze czucie)
+                if event.key == pygame.K_SPACE or event.key == pygame.K_w or event.key == pygame.K_UP:
+                    self.player.jump_cut()
 
     def update(self):
         self.all_sprites.update()
@@ -95,8 +103,9 @@ class Game:
         # ale są obsługiwane przez logikę Wall Jump w player.py
 
         # 3. KAMERA (PRZESUWANIE EKRANU W GÓRĘ)
-        # Jeśli gracz dotrze do górnej 1/4 ekranu
-        if self.player.rect.top <= SCREEN_HEIGHT / 4:
+        # Dla wyższego ekranu: scroll startuje gdy gracz jest w połowie ekranu (zamiast 1/4)
+        scroll_threshold = SCREEN_HEIGHT / 2
+        if self.player.rect.top <= scroll_threshold:
             self.player.pos.y += abs(self.player.vel.y)
             # Przesuń platformy w dół
             for plat in self.platforms:
@@ -129,7 +138,6 @@ class Game:
                 self.highscore = self.score
                 with open(HS_FILE, 'w') as f:
                     f.write(str(self.highscore))
-
             print(f"Koniec gry! Twój wynik: {self.score}, Rekord: {self.highscore}")
             self.new_game()
 
@@ -150,6 +158,14 @@ class Game:
         hs_surf = self.font.render(f"Rekord: {self.highscore}", True, RED)
         self.screen.blit(hs_surf, (10, 35))
 
+        # COMBO COUNTER - Icy Tower style
+        if self.player.jump_count > 1:
+            combo_font = pygame.font.SysFont("Arial", 36, bold=True)
+            combo_text = f"COMBO x{self.player.jump_count}!"
+            combo_surf = combo_font.render(combo_text, True, RED)
+            combo_x = SCREEN_WIDTH // 2 - combo_surf.get_width() // 2
+            self.screen.blit(combo_surf, (combo_x, 100))
+
         pygame.display.flip()
 
 
@@ -158,3 +174,4 @@ if __name__ == "__main__":
     g.run()
     pygame.quit()
     sys.exit()
+
