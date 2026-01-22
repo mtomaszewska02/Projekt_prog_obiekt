@@ -28,18 +28,52 @@ class Platform(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+
+# --- World_objects.py ---
+
+# --- World_objects.py ---
+import pygame
+import math
+from Settings import *
+
+
 class Lava(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        # Lawa jest szersza niż ekran i wysoka
-        self.image = pygame.Surface((SCREEN_WIDTH + 20, 1000))
-        self.image.fill(LAVA_COLOR)
-        self.image.set_alpha(200)  # Przezroczystość
+
+        try:
+            # Ładujemy teksturę lawy
+            lava_tile = pygame.image.load(LAVA_IMAGE_PATH).convert_alpha()
+            tile_w, tile_h = lava_tile.get_size()
+
+            # Tworzymy powierzchnię znacznie szerszą niż ekran, aby ruch boczny nie odsłonił krawędzi
+            self.image = pygame.Surface((SCREEN_WIDTH + 200, 1000), pygame.SRCALPHA)
+
+            # Wypełniamy kafelkami
+            for x in range(0, self.image.get_width(), tile_w):
+                for y in range(0, self.image.get_height(), tile_h):
+                    self.image.blit(lava_tile, (x, y))
+        except:
+            # Fallback
+            self.image = pygame.Surface((SCREEN_WIDTH + 200, 1000))
+            self.image.fill(LAVA_COLOR)
+            self.image.set_alpha(180)
 
         self.rect = self.image.get_rect()
-        self.rect.x = -10
-        self.rect.y = SCREEN_HEIGHT + 50  # Startuje pod ekranem
+        # Startowa pozycja - wyśrodkowana szerokość z zapasem na ruch
+        self.rect.x = -100
+        self.rect.y = SCREEN_HEIGHT + 50
+
+        self.angle = 0  # Potrzebne do obliczania falowania
 
     def update(self):
-        # Lawa ciągle idzie w górę
+        # 1. Ruch w górę (standardowy)
         self.rect.y -= LAVA_SPEED
+
+        # 2. Efekt płynności (falowanie na boki)
+        self.angle += 0.05  # Prędkość falowania
+        # Sinus zwraca wartość od -1 do 1, mnożymy przez amplitudę (np. 15 pikseli)
+        wave_offset = math.sin(self.angle) * 15
+
+        # Ustawiamy pozycję X bazując na stałym offsecie i wyniku sinusa
+        self.rect.x = -100 + wave_offset
