@@ -1,7 +1,7 @@
 import pygame
 
 # --- EKRAN ---
-SCREEN_WIDTH = 400
+SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 FPS = 60
 TITLE = "Infinite Jumper - Python"
@@ -39,14 +39,12 @@ LAVA_COLOR = (255, 69, 0)
 # Ścieżki do grafik
 BG_IMAGE_PATH = "grafika/background.png"
 PLATFORM_IMAGE_PATH = "grafika/platform.png"
+LAVA_IMAGE_PATH = "grafika/lava.png" # Ścieżka do wygenerowanego obrazka struktury
 
 # Zmień konfigurację gracza na:
 PLAYER_SKIN = {
     "width": 32,
     "height": 48,
-    "color_idle": (0,0,0), # Te kolory są teraz ignorowane, bo jest obrazek
-    "color_run": (0,0,0),
-    "color_jump": (0,0,0),
     "image_path": "grafika/hero.png"} # Ścieżka do pliku wygenerowanego skryptem
 
 # Funkcja pomocnicza do generowania tekstur (nie musisz jej zmieniać)
