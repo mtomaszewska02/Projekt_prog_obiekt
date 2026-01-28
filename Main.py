@@ -69,6 +69,11 @@ class Game:
         self.platforms.add(p1)
 
         self.score = 0
+        self.player_manager.record_broken = False# Reset flagi rekordu
+        self.record_celebrated = False# Reset flagi rekordu
+        # Pobierz aktualny rekord świata na start
+        top_scores = self.leaderboard.get_top_10()
+        self.high_score = top_scores[0]["score"] if top_scores else 0
 
     def check_ground(self):
         """Sprawdza czy gracz stoi na ziemi"""
@@ -145,22 +150,33 @@ class Game:
 
         if death_by_lava or fell_off:
             self.handle_game_over()
+         # Sprawdź czy rekord został właśnie pobity
+        if self.score > self.high_score and not self.record_celebrated:
+            if self.high_score > 0:  # Nie pokazuj przy pierwszej grze od zera
+                self.player_manager.setup_confetti(SCREEN_WIDTH)
+                self.record_celebrated = True
 
     def handle_game_over(self):
         """Obsługuje koniec gry"""
+        # Sprawdzamy czy to nowy rekord ŚWIATA (czyli bije wynik z 1 miejsca)
+        is_new_record = False
+        top_scores = self.leaderboard.get_top_10()
+        if not top_scores or self.score > top_scores[0]["score"]:
+            is_new_record = True
+
         # Dodaj wynik do leaderboard
         self.leaderboard.add_score(self.current_player, self.score)
 
-        # Sprawdź czy to 1 miejsce
-        if self.leaderboard.is_first_place(self.current_player, self.score):
+        # Jeśli to nowy rekord, wyświetl animację konfetti
+        if is_new_record:
             self.player_manager.display_first_place_message(
-                self.screen, SCREEN_WIDTH, SCREEN_HEIGHT
+                self.screen, SCREEN_WIDTH, SCREEN_HEIGHT, self.score
             )
 
         # Wyświetl menu po grze
         action = self.player_manager.display_game_over_menu(
             self.screen, SCREEN_WIDTH, SCREEN_HEIGHT,
-            self.current_player, self.score
+            self.current_player, self.score, self.leaderboard
         )
 
         if action == "restart":
@@ -170,6 +186,8 @@ class Game:
         elif action == "quit":
             self.running = False
 
+
+
     def draw(self):
         """Rysowanie gry"""
         if self.background:
@@ -178,7 +196,7 @@ class Game:
             self.screen.fill(SKY_BLUE)
 
         self.all_sprites.draw(self.screen)
-
+        self.player_manager.draw_ingame_animation(self.screen, SCREEN_WIDTH)
         # Rysowanie wyniku bieżącego
         score_surf = self.font.render(f"Wysokość: {self.score}", True, BLACK)
         self.screen.blit(score_surf, (10, 10))
