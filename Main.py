@@ -7,6 +7,7 @@ from World_objects import Platform, Lava
 from LeaderBoard import LeaderBoard
 from PlayerManager import PlayerManager
 
+
 class Game:
     def __init__(self):
         pygame.init()
@@ -45,6 +46,7 @@ class Game:
         """Inicjalizuje nową grę"""
         self.difficulty = 1.0  # Startowy mnożnik trudności
         self.score = 0
+        self.record_celebrated = False  # Reset flagi rekordu
         
         # Grupy spritów
         self.all_sprites = pygame.sprite.Group()
@@ -55,7 +57,7 @@ class Game:
         self.player = Player(self)
         self.all_sprites.add(self.player)
 
-        # Lawa (teraz przekazujemy self)
+        # Lawa
         self.lava = Lava(self)
         self.danger_zone.add(self.lava)
         self.all_sprites.add(self.lava)
@@ -64,6 +66,10 @@ class Game:
         p1 = Platform(self, SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT - 60)
         self.all_sprites.add(p1)
         self.platforms.add(p1)
+
+        # Pobierz aktualny rekord świata na start
+        top_scores = self.leaderboard.get_top_10()
+        self.high_score = top_scores[0]["score"] if top_scores else 0
 
     def check_ground(self):
         """Sprawdza czy gracz stoi na ziemi"""
@@ -113,7 +119,7 @@ class Game:
                     self.player.pos.y = hits[0].rect.top
                     self.player.vel.y = 0
 
-        # 3. KAMERA (PRZESUWANIE EKRANU W GÓRĘ)
+        # 2. KAMERA (PRZESUWANIE EKRANU W GÓRĘ)
         scroll_threshold = SCREEN_HEIGHT / 2
         if self.player.rect.top <= scroll_threshold:
             self.player.pos.y += abs(self.player.vel.y)
@@ -126,32 +132,49 @@ class Game:
             self.lava.rect.y += abs(self.player.vel.y)
             self.score += int(abs(self.player.vel.y))
 
-        # 4. GENEROWANIE NOWYCH PLATFORM
+        # 3. GENEROWANIE NOWYCH PLATFORM
         while len(self.platforms) < MAX_PLATFORMS:
             highest_plat = min(self.platforms, key=lambda p: p.rect.top)
             y = highest_plat.rect.top - random.randint(*PLATFORM_GAP_Y)
             x = random.randrange(0, SCREEN_WIDTH - 100)
 
-            p = Platform(self, x, y) # Przekazujemy self (grę)
+            p = Platform(self, x, y)
             self.platforms.add(p)
             self.all_sprites.add(p)
 
-        # 5. ŚMIERĆ (DOTKNIĘCIE LAWY LUB SPADNIĘCIE)
+        # 4. ŚMIERĆ (DOTKNIĘCIE LAWY LUB SPADNIĘCIE)
         death_by_lava = pygame.sprite.spritecollide(self.player, self.danger_zone, False)
         fell_off = self.player.rect.top > SCREEN_HEIGHT + 200
 
         if death_by_lava or fell_off:
             self.handle_game_over()
 
+        # 5. Sprawdzenie czy rekord został właśnie pobity
+        if self.score > self.high_score and not self.record_celebrated:
+            if self.high_score > 0:
+                self.player_manager.setup_confetti(SCREEN_WIDTH)
+                self.record_celebrated = True
+
     def handle_game_over(self):
         """Obsługuje koniec gry"""
+        # Sprawdzamy czy to nowy rekord ŚWIATA
+        is_new_record = False
+        top_scores = self.leaderboard.get_top_10()
+        if not top_scores or self.score > top_scores[0]["score"]:
+            is_new_record = True
+
+        # Dodaj wynik do leaderboard
         self.leaderboard.add_score(self.current_player, self.score)
-        if self.leaderboard.is_first_place(self.current_player, self.score):
-            self.player_manager.display_first_place_message(self.screen, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        # Jeśli to nowy rekord, wyświetl komunikat
+        if is_new_record:
+            self.player_manager.display_first_place_message(
+                self.screen, SCREEN_WIDTH, SCREEN_HEIGHT, self.score
+            )
 
         action = self.player_manager.display_game_over_menu(
             self.screen, SCREEN_WIDTH, SCREEN_HEIGHT,
-            self.current_player, self.score
+            self.current_player, self.score, self.leaderboard
         )
 
         if action == "restart":
@@ -169,8 +192,9 @@ class Game:
             self.screen.fill(SKY_BLUE)
 
         self.all_sprites.draw(self.screen)
+        self.player_manager.draw_ingame_animation(self.screen, SCREEN_WIDTH)
 
-        # Rysowanie wyniku bieżącego i poziomu trudności
+        # Rysowanie wyniku bieżącego i trudności
         score_text = f"Wysokość: {self.score} | Trudność: {round(self.difficulty, 2)}"
         score_surf = self.font.render(score_text, True, BLACK)
         self.screen.blit(score_surf, (10, 10))
