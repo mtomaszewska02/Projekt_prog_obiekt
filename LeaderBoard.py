@@ -46,8 +46,21 @@ class LeaderBoard:
             self.data = self.data[:10]
 
     def get_top_10(self):
-        """Zwraca top 10 wyników"""
-        return self.data
+        """Zwraca top 10 unikalnych wyników (jeden na gracza)"""
+        unique_players = {}
+
+        # Przechodzimy przez wszystkie wyniki (posortowane już malejąco)
+        for entry in self.data:
+            name = entry['nickname']
+            score = entry['score']
+
+            # Jeśli gracza nie ma w słowniku, dodajemy go.
+            # Ponieważ dane są posortowane, pierwszy napotkany wynik danego gracza jest jego najlepszym.
+            if name not in unique_players:
+                unique_players[name] = entry
+
+        # Zamieniamy słownik z powrotem na listę i bierzemy pierwsze 10 elementów
+        return list(unique_players.values())[:10]
 
     def get_player_rank(self, nickname, score):
         """Zwraca pozycję gracza w rankingu (1-10) lub -1 jeśli poza top 10"""
